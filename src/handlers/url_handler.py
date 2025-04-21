@@ -78,3 +78,6 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.error(f"Failed to clean up file {filename}: {str(e)}")
         else:
             logger.debug("No file to clean up (filename is None)")
+
+# Define the MessageHandler
+handle_url_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url)
