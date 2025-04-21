@@ -1,7 +1,7 @@
 import logging
 import os
 from telegram.ext import Application
-from src.database.init import init_db
+from src.database.db_init import init_db
 from src.handlers.start import start
 from src.handlers.help import help_command
 from src.handlers.quality import quality_command
