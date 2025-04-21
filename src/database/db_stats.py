@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from pymongo import MongoClient
-from pymongo.errors import ConnectionError, OperationFailure
+from pymongo.errors import ConnectionFailure, OperationFailure
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ def get_mongo_collection(collection_name: str):
         client = MongoClient(mongo_uri)
         db = client["telegram_bot"]
         return db[collection_name]
-    except ConnectionError as e:
+    except ConnectionFailure as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
         raise
 
@@ -31,7 +31,7 @@ def get_stats(user_id: int = None) -> dict:
         stats["total_downloads"] = requests_collection.count_documents(query)
 
         # Platform-specific downloads
-        platforms = ["youtube", "instagram", "twitter"]
+        platforms = ["youtube", "instagram", "twitter", "tiktok", "x"]
         for platform in platforms:
             platform_query = {"platform": platform}
             if user_id:
