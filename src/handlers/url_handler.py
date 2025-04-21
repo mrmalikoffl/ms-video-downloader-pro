@@ -17,14 +17,13 @@ async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
     chat_id = job.data["chat_id"]
     message_id = job.data["message_id"]
-    filename = job.data.get("filename")  # Get filename for cleanup
+    filename = job.data.get("filename")
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
         logger.debug(f"Deleted video message {message_id} from chat {chat_id}")
     except Exception as e:
         logger.error(f"Failed to delete video message {message_id} from chat {chat_id}: {str(e)}")
     finally:
-        # Clean up local file after deletion
         if filename:
             try:
                 cleanup_file(filename)
@@ -57,7 +56,8 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     platform = next((p for p in SUPPORTED_PLATFORMS if p.lower() in url.lower()), "unknown")
     record_request(user_id, platform)
 
-    await update.message.reply_text("⏳ Processing your video... Please wait.")
+    # Send processing message and store it
+    processing_message = await update.message.reply_text("⏳ Processing your video... Please wait.")
 
     # Get quality
     quality = context.user_data.get("quality", "720p")
@@ -81,13 +81,23 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
         return
 
-    # Send video and schedule deletion
+    # Send video, delete processing message, and schedule deletion
     try:
         with open(filename, "rb") as video_file:
             video_message = await update.message.reply_video(video=video_file)
         await update.message.reply_text("✅ Video downloaded successfully! 🎉")
 
-        # Schedule deletion after 5 minutes (300 seconds)
+        # Delete the processing message
+        try:
+            await context.bot.delete_message(
+                chat_id=processing_message.chat_id,
+                message_id=processing_message.message_id
+            )
+            logger.debug(f"Deleted processing message {processing_message.message_id} from chat {processing_message.chat_id}")
+        except Exception as e:
+            logger.error(f"Failed to delete processing message {processing_message.message_id}: {str(e)}")
+
+        # Schedule video deletion after 5 minutes (300 seconds)
         context.job_queue.run_once(
             callback=delete_video_message,
             when=300,
