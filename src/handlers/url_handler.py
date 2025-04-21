@@ -13,11 +13,12 @@ from src.config import SUPPORTED_PLATFORMS, RATE_LIMIT_PER_HOUR, ADMIN_IDS
 logger = logging.getLogger(__name__)
 
 async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
-    """Callback to delete the video message and success message from the chat."""
+    """Callback to delete the video message, success message, and guide message from the chat."""
     job = context.job
     chat_id = job.data["chat_id"]
     video_message_id = job.data["video_message_id"]
     success_message_id = job.data["success_message_id"]
+    guide_message_id = job.data["guide_message_id"]
     filename = job.data.get("filename")
 
     # Delete video message
@@ -33,6 +34,13 @@ async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
         logger.debug(f"Deleted success message {success_message_id} from chat {chat_id}")
     except Exception as e:
         logger.error(f"Failed to delete success message {success_message_id} from chat {chat_id}: {str(e)}")
+
+    # Delete guide message
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=guide_message_id)
+        logger.debug(f"Deleted guide message {guide_message_id} from chat {chat_id}")
+    except Exception as e:
+        logger.error(f"Failed to delete guide message {guide_message_id} from chat {chat_id}: {str(e)}")
 
     # Clean up local file
     if filename:
@@ -92,11 +100,19 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
         return
 
-    # Send video, delete processing message, and schedule deletion
+    # Send video, delete processing message, send guide, and schedule deletion
     try:
         with open(filename, "rb") as video_file:
             video_message = await update.message.reply_video(video=video_file)
         success_message = await update.message.reply_text("✅ Video downloaded successfully! 🎉")
+        guide_message = await update.message.reply_text(
+            "📥 **Download Guide**  \n"
+            "To save the above video to your gallery:  \n"
+            "1. Click the three dots (⋮) on the video's right corner.  \n"
+            "2. Select **Save to Downloads** or **Save to Gallery**.  \n"
+            "Thank you! 😊",
+            parse_mode="Markdown"
+        )
 
         # Delete the processing message
         try:
@@ -108,7 +124,7 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Failed to delete processing message {processing_message.message_id}: {str(e)}")
 
-        # Schedule video and success message deletion after 5 minutes (300 seconds)
+        # Schedule video, success, and guide message deletion after 5 minutes (300 seconds)
         context.job_queue.run_once(
             callback=delete_video_message,
             when=300,
@@ -116,11 +132,12 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "chat_id": update.message.chat_id,
                 "video_message_id": video_message.message_id,
                 "success_message_id": success_message.message_id,
+                "guide_message_id": guide_message.message_id,
                 "filename": filename
             },
             name=f"delete_video_{video_message.message_id}"
         )
-        logger.debug(f"Scheduled deletion of video message {video_message.message_id} and success message {success_message.message_id} in 5 minutes")
+        logger.debug(f"Scheduled deletion of video message {video_message.message_id}, success message {success_message.message_id}, and guide message {guide_message.message_id} in 5 minutes")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
         if filename:
