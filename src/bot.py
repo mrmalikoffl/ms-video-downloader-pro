@@ -53,7 +53,7 @@ def main():
     application.add_error_handler(error_handler)
 
     # Start the bot
-    application.run_polling(allowed_updates=ContextTypes.DEFAULT_TYPE.ALL_TYPES)
+    application.run_polling(allowed_updates=None)
 
 if __name__ == "__main__":
     main()
