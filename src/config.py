@@ -1,4 +1,4 @@
-SUPPORTED_PLATFORMS = ["YouTube", "Instagram", "Twitter/X"]
+SUPPORTED_PLATFORMS = ["YouTube", "Instagram", "Twitter/X", "Tiktok"]
 RATE_LIMIT_PER_HOUR = 5
 ADMIN_IDS = [5975525252]  # Replace with your Telegram user ID
 SUBSCRIPTION_PRICES = {
