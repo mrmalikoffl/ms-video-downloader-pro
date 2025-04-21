@@ -5,3 +5,4 @@ __pycache__/
 bot.py
 *.py
 src/
+src/cookies/
