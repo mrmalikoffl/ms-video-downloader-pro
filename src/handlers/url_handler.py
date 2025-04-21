@@ -13,23 +13,34 @@ from src.config import SUPPORTED_PLATFORMS, RATE_LIMIT_PER_HOUR, ADMIN_IDS
 logger = logging.getLogger(__name__)
 
 async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
-    """Callback to delete a video message from the chat."""
+    """Callback to delete the video message and success message from the chat."""
     job = context.job
     chat_id = job.data["chat_id"]
-    message_id = job.data["message_id"]
+    video_message_id = job.data["video_message_id"]
+    success_message_id = job.data["success_message_id"]
     filename = job.data.get("filename")
+
+    # Delete video message
     try:
-        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-        logger.debug(f"Deleted video message {message_id} from chat {chat_id}")
+        await context.bot.delete_message(chat_id=chat_id, message_id=video_message_id)
+        logger.debug(f"Deleted video message {video_message_id} from chat {chat_id}")
     except Exception as e:
-        logger.error(f"Failed to delete video message {message_id} from chat {chat_id}: {str(e)}")
-    finally:
-        if filename:
-            try:
-                cleanup_file(filename)
-                logger.debug(f"Cleaned up file: {filename}")
-            except Exception as e:
-                logger.error(f"Failed to clean up file {filename}: {str(e)}")
+        logger.error(f"Failed to delete video message {video_message_id} from chat {chat_id}: {str(e)}")
+
+    # Delete success message
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=success_message_id)
+        logger.debug(f"Deleted success message {success_message_id} from chat {chat_id}")
+    except Exception as e:
+        logger.error(f"Failed to delete success message {success_message_id} from chat {chat_id}: {str(e)}")
+
+    # Clean up local file
+    if filename:
+        try:
+            cleanup_file(filename)
+            logger.debug(f"Cleaned up file: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to clean up file {filename}: {str(e)}")
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming URLs."""
@@ -85,7 +96,7 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         with open(filename, "rb") as video_file:
             video_message = await update.message.reply_video(video=video_file)
-        await update.message.reply_text("✅ Video downloaded successfully! 🎉")
+        success_message = await update.message.reply_text("✅ Video downloaded successfully! 🎉")
 
         # Delete the processing message
         try:
@@ -97,21 +108,21 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Failed to delete processing message {processing_message.message_id}: {str(e)}")
 
-        # Schedule video deletion after 5 minutes (300 seconds)
+        # Schedule video and success message deletion after 5 minutes (300 seconds)
         context.job_queue.run_once(
             callback=delete_video_message,
             when=300,
             data={
                 "chat_id": update.message.chat_id,
-                "message_id": video_message.message_id,
+                "video_message_id": video_message.message_id,
+                "success_message_id": success_message.message_id,
                 "filename": filename
             },
             name=f"delete_video_{video_message.message_id}"
         )
-        logger.debug(f"Scheduled deletion of video message {video_message.message_id} in 5 minutes")
+        logger.debug(f"Scheduled deletion of video message {video_message.message_id} and success message {success_message.message_id} in 5 minutes")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
-        # Clean up file if sending fails
         if filename:
             try:
                 cleanup_file(filename)
