@@ -29,8 +29,7 @@ def download_video(url: str, quality: str, message: Update.message, cookies_file
     except yt_dlp.utils.DownloadError as e:
         if "ffmpeg is not installed" in str(e):
             logger.warning(f"ffmpeg not installed, falling back to single format for {url}")
-            # Fallback to single format (no merging)
-            ydl_opts["format"] = f"best[height<={quality[:-1]}]"
+            ydl_opts["format"] = "bestvideo"  # More general fallback for Instagram
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
