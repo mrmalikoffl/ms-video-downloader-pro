@@ -12,6 +12,26 @@ from src.config import SUPPORTED_PLATFORMS, RATE_LIMIT_PER_HOUR, ADMIN_IDS
 
 logger = logging.getLogger(__name__)
 
+async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
+    """Callback to delete a video message from the chat."""
+    job = context.job
+    chat_id = job.data["chat_id"]
+    message_id = job.data["message_id"]
+    filename = job.data.get("filename")  # Get filename for cleanup
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+        logger.debug(f"Deleted video message {message_id} from chat {chat_id}")
+    except Exception as e:
+        logger.error(f"Failed to delete video message {message_id} from chat {chat_id}: {str(e)}")
+    finally:
+        # Clean up local file after deletion
+        if filename:
+            try:
+                cleanup_file(filename)
+                logger.debug(f"Cleaned up file: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to clean up file {filename}: {str(e)}")
+
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming URLs."""
     user_id = update.message.from_user.id
@@ -61,23 +81,33 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
         return
 
-    # Send video
+    # Send video and schedule deletion
     try:
         with open(filename, "rb") as video_file:
-            await update.message.reply_video(video=video_file)
+            video_message = await update.message.reply_video(video=video_file)
         await update.message.reply_text("✅ Video downloaded successfully! 🎉")
+
+        # Schedule deletion after 5 minutes (300 seconds)
+        context.job_queue.run_once(
+            callback=delete_video_message,
+            when=300,
+            data={
+                "chat_id": update.message.chat_id,
+                "message_id": video_message.message_id,
+                "filename": filename
+            },
+            name=f"delete_video_{video_message.message_id}"
+        )
+        logger.debug(f"Scheduled deletion of video message {video_message.message_id} in 5 minutes")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
-    finally:
-        # Safely clean up the file if it exists
+        # Clean up file if sending fails
         if filename:
             try:
                 cleanup_file(filename)
                 logger.debug(f"Cleaned up file: {filename}")
             except Exception as e:
                 logger.error(f"Failed to clean up file {filename}: {str(e)}")
-        else:
-            logger.debug("No file to clean up (filename is None)")
 
 # Define the MessageHandler
 handle_url_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url)
