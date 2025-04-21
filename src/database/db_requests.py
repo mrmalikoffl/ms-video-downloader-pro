@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from pymongo import MongoClient
-from pymongo.errors import ConnectionError, OperationFailure
+from pymongo.errors import ConnectionFailure, OperationFailure
 from src.config import RATE_LIMIT_PER_HOUR
 
 logger = logging.getLogger(__name__)
@@ -16,9 +16,9 @@ def get_mongo_collection():
         client = MongoClient(mongo_uri)
         db = client["telegram_bot"]
         collection = db["requests"]
-        collection.create_index("user_id")  # Index for faster queries
+        collection.create_index("user_id")
         return collection
-    except ConnectionError as e:
+    except ConnectionFailure as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
         raise
 
