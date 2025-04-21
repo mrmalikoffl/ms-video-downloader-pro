@@ -1,41 +1,52 @@
-import sqlite3
-from datetime import datetime, timedelta
-from src.config import RATE_LIMIT_PER_HOUR
 import logging
+import os
+from datetime import datetime, timedelta
+from pymongo import MongoClient
+from pymongo.errors import ConnectionError, OperationFailure
+from src.config import RATE_LIMIT_PER_HOUR
 
 logger = logging.getLogger(__name__)
+
+def get_mongo_collection():
+    """Connect to MongoDB and return the requests collection."""
+    try:
+        mongo_uri = os.getenv("MONGODB_URI")
+        if not mongo_uri:
+            raise ValueError("MONGODB_URI environment variable not set")
+        client = MongoClient(mongo_uri)
+        db = client["telegram_bot"]
+        collection = db["requests"]
+        collection.create_index("user_id")  # Index for faster queries
+        return collection
+    except ConnectionError as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        raise
 
 def record_request(user_id: int, platform: str):
     """Record a download request."""
     try:
-        conn = sqlite3.connect("/app/downloads.db")
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO requests (user_id, platform, timestamp) VALUES (?, ?, ?)",
-            (user_id, platform, datetime.now())
-        )
-        conn.commit()
+        collection = get_mongo_collection()
+        request = {
+            "user_id": user_id,
+            "platform": platform,
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+        }
+        collection.insert_one(request)
         logger.info(f"Recorded request for user {user_id} on platform {platform}")
-    except sqlite3.Error as e:
+    except OperationFailure as e:
         logger.error(f"Error recording request for user {user_id}: {e}")
         raise
-    finally:
-        conn.close()
 
 def check_rate_limit(user_id: int) -> bool:
     """Check if the user is within the rate limit."""
     try:
-        conn = sqlite3.connect("/app/downloads.db")
-        c = conn.cursor()
-        one_hour_ago = datetime.now() - timedelta(hours=1)
-        c.execute(
-            "SELECT COUNT(*) FROM requests WHERE user_id = ? AND timestamp > ?",
-            (user_id, one_hour_ago)
-        )
-        count = c.fetchone()[0]
+        collection = get_mongo_collection()
+        one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S.%f")
+        count = collection.count_documents({
+            "user_id": user_id,
+            "timestamp": {"$gt": one_hour_ago}
+        })
         return count < RATE_LIMIT_PER_HOUR
-    except sqlite3.Error as e:
+    except OperationFailure as e:
         logger.error(f"Error checking rate limit for user {user_id}: {e}")
         return False
-    finally:
-        conn.close()
