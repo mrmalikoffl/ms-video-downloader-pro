@@ -1,3 +1,4 @@
+# In src/bot.py
 import logging
 import os
 from telegram.ext import Application
@@ -8,7 +9,7 @@ from src.handlers.quality import quality_command
 from src.handlers.stats import stats_command
 from src.handlers.subscribe import subscribe_command, callback_query_handler
 from src.handlers.bot_info import bot_info_command
-from src.handlers.url_handler import handle_url
+from src.handlers.url_handler import handle_url_handler  # Updated import
 from src.handlers.admin_menu import admin_menu_command
 from src.handlers.grant_premium import grant_premium_command
 from src.handlers.revoke_premium import revoke_premium_command
@@ -50,7 +51,7 @@ def main():
     application.add_handler(stats_command)
     application.add_handler(subscribe_command)
     application.add_handler(bot_info_command)
-    application.add_handler(handle_url)
+    application.add_handler(handle_url_handler)  # Updated to use handle_url_handler
     application.add_handler(admin_menu_command)
     application.add_handler(grant_premium_command)
     application.add_handler(revoke_premium_command)
