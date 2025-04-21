@@ -1,4 +1,17 @@
 # In src.handlers.url_handler
+import logging
+from telegram import Update
+from telegram.ext import MessageHandler, filters, ContextTypes
+from src.utils.url_validator import is_valid_url
+from src.utils.file_cleanup import cleanup_file
+from src.database.db_requests import record_request
+from src.database.db_premium import is_premium_user
+from src.database.db_requests import check_rate_limit
+from src.downloader.video_downloader import download_video
+from src.config import SUPPORTED_PLATFORMS, RATE_LIMIT_PER_HOUR, ADMIN_IDS
+
+logger = logging.getLogger(__name__)
+
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming URLs."""
     user_id = update.message.from_user.id
@@ -56,3 +69,12 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
     finally:
+        # Safely clean up the file if it exists
+        if filename:
+            try:
+                cleanup_file(filename)
+                logger.debug(f"Cleaned up file: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to clean up file {filename}: {str(e)}")
+        else:
+            logger.debug("No file to clean up (filename is None)")
