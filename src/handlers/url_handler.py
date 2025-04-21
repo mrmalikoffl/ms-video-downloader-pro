@@ -1,4 +1,3 @@
-# In src.handlers.url_handler
 import logging
 from telegram import Update
 from telegram.ext import MessageHandler, filters, ContextTypes
@@ -71,8 +70,10 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Record request
+    # Determine platform and record request
     platform = next((p for p in SUPPORTED_PLATFORMS if p.lower() in url.lower()), "unknown")
+    if "x.com" in url.lower() or "twitter.com" in url.lower():
+        platform = "x"
     record_request(user_id, platform)
 
     # Send processing message and store it
@@ -87,6 +88,8 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cookies_file = "/app/src/cookies/instagram_cookies.txt"
     elif "youtube" in platform.lower():
         cookies_file = "/app/src/cookies/youtube_cookies.txt"
+    elif platform == "x":
+        cookies_file = "/app/src/cookies/x_cookies.txt"
 
     # Download video
     filename, error = download_video(url, quality, update.message, cookies_file=cookies_file)
@@ -94,7 +97,26 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if error:
         if "sign in to confirm" in error.lower():
             await update.message.reply_text(
-                "❌ YouTube requires additional verification for this video. Try another video or contact support."
+                "❌ YouTube requires additional verification for this video. "
+                "This may be due to age restrictions or regional settings. "
+                "Please try a different video or contact support."
+            )
+        elif "http error 403" in error.lower():
+            await update.message.reply_text(
+                "❌ Unable to download this video due to access restrictions. "
+                "It may be age-restricted or region-locked. "
+                "Please try a different video or contact support."
+            )
+        elif "requested format is not available" in error.lower():
+            await update.message.reply_text(
+                "❌ This video’s format is not available for download. "
+                "It may be a live stream or have restricted formats. "
+                "Please try a different video."
+            )
+        elif "live stream" in error.lower():
+            await update.message.reply_text(
+                "❌ Live streams are not supported for download. "
+                "Please try a different video."
             )
         else:
             await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
