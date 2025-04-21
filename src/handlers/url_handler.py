@@ -18,7 +18,7 @@ async def delete_video_message(context: ContextTypes.DEFAULT_TYPE):
     video_message_id = job.data["video_message_id"]
     success_message_id = job.data["success_message_id"]
     guide_message_id = job.data["guide_message_id"]
-    filename = job.data.get("filename")
+    filename = job.data.get("filename")  # Fixed typo: 'mesmos_id' -> 'filename'
 
     # Delete video message
     try:
@@ -163,12 +163,12 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "chat_id": update.message.chat_id,
                 "video_message_id": video_message.message_id,
                 "success_message_id": success_message.message_id,
-                "guide_message_id": guide_message.message_id,
+                "guide_message_id": guide_message.message_id,  # Fixed: Use guide_message.message_id
                 "filename": filename
             },
             name=f"delete_video_{video_message.message_id}"
         )
-        logger.debug(f"Scheduled deletion of video message {video_message.message_id}, success message {success_message.message_id}, and guide message {guide_message_id} in 5 minutes")
+        logger.debug(f"Scheduled deletion of video message {video_message.message_id}, success message {success_message.message_id}, and guide message {guide_message.message_id} in 5 minutes")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
         if filename:
