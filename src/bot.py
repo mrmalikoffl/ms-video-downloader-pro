@@ -11,7 +11,7 @@ from src.handlers.subscribe import subscribe_command, callback_query_handler
 from src.handlers.bot_info import bot_info_command
 from src.handlers.url_handler import handle_url_handler
 from src.handlers.admin_menu import admin_menu_command
-from src.handlers.grant_premium import grant_premium_command
+from src.handlers.grant_premium_command import grant_premium_handler
 from src.handlers.revoke_premium import revoke_premium_command
 from src.handlers.users_list import users_list_command
 from src.handlers.premium_users_list import premium_users_list_command
@@ -53,7 +53,7 @@ def main():
     application.add_handler(bot_info_command)  # Bot info
     application.add_handler(handle_url_handler)  # URL processing with auto-deletion after 5 minutes
     application.add_handler(admin_menu_command)  # Admin menu
-    application.add_handler(grant_premium_command)  # Grant premium access
+    application.add_handler(grant_premium_handler)
     application.add_handler(revoke_premium_command)  # Revoke premium access
     application.add_handler(users_list_command)  # List all users
     application.add_handler(premium_users_list_command)  # List premium users
