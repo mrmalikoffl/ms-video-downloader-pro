@@ -1,17 +1,4 @@
-import logging
-import os
-from telegram import Update
-from telegram.ext import MessageHandler, filters, ContextTypes
-from src.utils.url_validator import is_valid_url
-from src.utils.file_cleanup import cleanup_file
-from src.database.db_requests import record_request
-from src.database.db_premium import is_premium_user
-from src.database.db_requests import check_rate_limit
-from src.downloader.video_downloader import download_video
-from src.config import SUPPORTED_PLATFORMS, RATE_LIMIT_PER_HOUR, ADMIN_IDS
-
-logger = logging.getLogger(__name__)
-
+# In src.handlers.url_handler
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming URLs."""
     user_id = update.message.from_user.id
@@ -42,14 +29,23 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get quality
     quality = context.user_data.get("quality", "720p")
 
-    # Define cookies file path for Instagram
-    cookies_file = "/app/src/cookies/instagram_cookies.txt" if "instagram" in platform.lower() else None
+    # Define cookies file path
+    cookies_file = None
+    if "instagram" in platform.lower():
+        cookies_file = "/app/src/cookies/instagram_cookies.txt"
+    elif "youtube" in platform.lower():
+        cookies_file = "/app/src/cookies/youtube_cookies.txt"
 
     # Download video
     filename, error = download_video(url, quality, update.message, cookies_file=cookies_file)
 
     if error:
-        await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
+        if "sign in to confirm" in error.lower():
+            await update.message.reply_text(
+                "❌ YouTube requires additional verification for this video. Try another video or contact support."
+            )
+        else:
+            await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
         return
 
     # Send video
@@ -60,6 +56,3 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
     finally:
-        cleanup_file(filename)
-
-handle_url = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url)
