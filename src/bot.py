@@ -1,8 +1,6 @@
-# In src/bot.py
 import logging
 import os
 from telegram.ext import Application
-from src.database.db_init import init_db
 from src.handlers.start import start
 from src.handlers.help import help_command
 from src.handlers.quality import quality_command
@@ -32,14 +30,6 @@ def main():
     """Run the bot."""
     if not BOT_TOKEN:
         raise ValueError("BOT_TOKEN environment variable not set.")
-
-    # Initialize database
-    try:
-        init_db()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        raise
 
     # Create the Application
     application = Application.builder().token(BOT_TOKEN).build()
