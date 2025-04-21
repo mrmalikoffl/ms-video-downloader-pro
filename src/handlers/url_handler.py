@@ -74,6 +74,8 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     platform = next((p for p in SUPPORTED_PLATFORMS if p.lower() in url.lower()), "unknown")
     if "x.com" in url.lower() or "twitter.com" in url.lower():
         platform = "x"
+    elif "tiktok.com" in url.lower():
+        platform = "tiktok"
     record_request(user_id, platform)
 
     # Send processing message and store it
@@ -90,6 +92,8 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cookies_file = "/app/src/cookies/youtube_cookies.txt"
     elif platform == "x":
         cookies_file = "/app/src/cookies/x_cookies.txt"
+    elif platform == "tiktok":
+        cookies_file = "/app/src/cookies/tiktok_cookies.txt"
 
     # Download video
     filename, error = download_video(url, quality, update.message, cookies_file=cookies_file)
@@ -117,6 +121,11 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 "❌ Live streams are not supported for download. "
                 "Please try a different video."
+            )
+        elif "private" in error.lower() or "not available" in error.lower():
+            await update.message.reply_text(
+                f"❌ This {platform.capitalize()} video is private or not available. "
+                "Please ensure you have access and try again with a public video."
             )
         else:
             await update.message.reply_text(f"❌ Oops! Something went wrong: {error}")
@@ -159,7 +168,7 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
             },
             name=f"delete_video_{video_message.message_id}"
         )
-        logger.debug(f"Scheduled deletion of video message {video_message.message_id}, success message {success_message.message_id}, and guide message {guide_message.message_id} in 5 minutes")
+        logger.debug(f"Scheduled deletion of video message {video_message.message_id}, success message {success_message.message_id}, and guide message {guide_message_id} in 5 minutes")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send video: {str(e)}")
         if filename:
