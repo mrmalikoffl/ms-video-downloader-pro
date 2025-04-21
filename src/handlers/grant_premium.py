@@ -7,7 +7,7 @@ from src.database.db_premium import grant_premium
 logger = logging.getLogger(__name__)
 
 async def grant_premium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /grant_premium command."""
+    """Handle /grant_premium command with admin and user notifications."""
     admin_id = update.message.from_user.id
     if admin_id not in ADMIN_IDS:
         await update.message.reply_text("❌ You are not authorized.")
