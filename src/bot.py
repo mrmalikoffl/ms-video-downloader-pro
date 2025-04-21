@@ -9,7 +9,7 @@ from src.handlers.quality import quality_command
 from src.handlers.stats import stats_command
 from src.handlers.subscribe import subscribe_command, callback_query_handler
 from src.handlers.bot_info import bot_info_command
-from src.handlers.url_handler import handle_url_handler  # Updated import
+from src.handlers.url_handler import handle_url_handler
 from src.handlers.admin_menu import admin_menu_command
 from src.handlers.grant_premium import grant_premium_command
 from src.handlers.revoke_premium import revoke_premium_command
@@ -45,25 +45,25 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
     # Add handlers
-    application.add_handler(start)
-    application.add_handler(help_command)
-    application.add_handler(quality_command)
-    application.add_handler(stats_command)
-    application.add_handler(subscribe_command)
-    application.add_handler(bot_info_command)
-    application.add_handler(handle_url_handler)  # Updated to use handle_url_handler
-    application.add_handler(admin_menu_command)
-    application.add_handler(grant_premium_command)
-    application.add_handler(revoke_premium_command)
-    application.add_handler(users_list_command)
-    application.add_handler(premium_users_list_command)
-    application.add_handler(admin_stats_command)
-    application.add_handler(callback_query_handler)
-    application.add_handler(handle_successful_payment)
-    application.add_error_handler(error_handler)
+    application.add_handler(start)  # Start command
+    application.add_handler(help_command)  # Help command
+    application.add_handler(quality_command)  # Quality selection
+    application.add_handler(stats_command)  # User stats
+    application.add_handler(subscribe_command)  # Subscription command
+    application.add_handler(bot_info_command)  # Bot info
+    application.add_handler(handle_url_handler)  # URL processing with auto-deletion after 5 minutes
+    application.add_handler(admin_menu_command)  # Admin menu
+    application.add_handler(grant_premium_command)  # Grant premium access
+    application.add_handler(revoke_premium_command)  # Revoke premium access
+    application.add_handler(users_list_command)  # List all users
+    application.add_handler(premium_users_list_command)  # List premium users
+    application.add_handler(admin_stats_command)  # Admin stats
+    application.add_handler(callback_query_handler)  # Subscription callback queries
+    application.add_handler(handle_successful_payment)  # Payment processing
+    application.add_error_handler(error_handler)  # Error handling
 
-    # Start the bot
-    application.run_polling(allowed_updates=None)
+    # Start the bot with explicit allowed updates for efficiency
+    application.run_polling(allowed_updates=["message", "callback_query", "pre_checkout_query", "successful_payment"])
 
 if __name__ == "__main__":
     main()
