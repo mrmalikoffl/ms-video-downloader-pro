@@ -2,7 +2,7 @@ import yt_dlp
 from telegram import Update
 from src.downloader.progress_hook import progress_hook
 
-def download_video(url: str, quality: str, message: Update.message) -> tuple:
+def download_video(url: str, quality: str, message: Update.message, cookies_file: str = None) -> tuple:
     """Download a video."""
     ydl_opts = {
         "outtmpl": "downloads/video.%(ext)s",
@@ -11,6 +11,10 @@ def download_video(url: str, quality: str, message: Update.message) -> tuple:
         "quiet": True,
         "progress_hooks": [lambda d: progress_hook(d, message)],
     }
+    # Add cookies file if provided
+    if cookies_file:
+        ydl_opts["cookiefile"] = cookies_file
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
