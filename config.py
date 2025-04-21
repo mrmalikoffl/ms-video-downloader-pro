@@ -1,6 +1,6 @@
 SUPPORTED_PLATFORMS = ["YouTube", "Instagram", "Twitter/X"]
 RATE_LIMIT_PER_HOUR = 5
-ADMIN_IDS = [123456789]  # Replace with your Telegram user ID
+ADMIN_IDS = [5975525252]  # Replace with your Telegram user ID
 SUBSCRIPTION_PRICES = {
     "daily": {"days": 1, "stars": 100, "price_usd": 1.0, "price_inr": 85},
     "weekly": {"days": 7, "stars": 250, "price_usd": 2.5, "price_inr": 210},
